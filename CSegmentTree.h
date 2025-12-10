@@ -2,6 +2,9 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#include <string>
+#include <sstream>
+#include <cmath>
 
 template <typename T>
 struct LazySumOp {
@@ -74,7 +77,7 @@ private:
 
     void Push(int node, int start, int end) {
         if (m_Lazy[node] == m_Op.neutralLazy()) return;
-        if (start != end) { // Si no es hoja, propagamos a hijos
+        if (start != end) {
             int mid = (start + end) / 2;
             int left = 2 * node;
             int right = 2 * node + 1;
@@ -148,5 +151,58 @@ public:
     T Query(int left, int right) {
         if (left > right) return m_Op.neutral();
         return Query(1, 0, m_nSize - 1, left, right);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const CSegmentTree& st) {
+        os << "\n-------------------------------------------\n";
+        os << "Formato: [VALOR] (Rango) {Lazy}\n\n";
+
+        auto print_recursive = [&](auto&& self, int node, int start, int end, int depth, bool isLeft) -> void {
+            if (node >= (int)st.m_Tree.size()) return;
+
+            // DERECHO 
+            if (start != end) {
+                int mid = (start + end) / 2;
+                self(self, 2 * node + 1, mid + 1, end, depth + 1, false);
+            }
+
+            // NODO ACTUAL
+            os << std::string(depth * 6, ' '); 
+
+            if (depth > 0) {
+                if (isLeft) { os << char(192); } 
+                else { os << char(218); }
+                os << char(196) << char(196) << char(196) << " ";
+            } 
+            
+            // valores
+            T val = st.m_Tree[node];
+            T lazy = st.m_Lazy[node];
+            bool hasLazy = (lazy != st.m_Op.neutralLazy());
+
+            // Imprimir Valor
+            if (val == st.m_Op.neutral()) os << "[N]"; // Neutro
+            else os << "[" << val << "]";
+
+            // Imprimir Rango
+            os << " (" << start << "-" << end << ")";
+
+            // Imprimir Lazy (Solo si existe)
+            if (hasLazy) {
+                os << " {Lazy: " << lazy << "}"; //
+            }
+            os << "\n";
+
+            // 3. Imprimir hijo IZQUIERDO (abajo)
+            if (start != end) {
+                int mid = (start + end) / 2;
+                self(self, 2 * node, start, mid, depth + 1, true);
+            }
+        };
+
+        print_recursive(print_recursive, 1, 0, st.m_nSize - 1, 0, false);
+        
+        os << "-------------------------------------------\n";
+        return os;
     }
 };
